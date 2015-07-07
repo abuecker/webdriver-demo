@@ -1,0 +1,41 @@
+box: ubuntu:14.04
+no-response-timeout: 20
+
+build:
+  steps:
+    - install-packages:
+      packages: wget
+
+    - script:
+        name: Add Chrome Repo
+        code: |
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
+          sudo apt-get update
+          # sudo apt-get install xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps imagemagick google-chrome-stable -y
+
+    - install-packages:
+      packages: firefox default-jre curl xvfb xfonts-100dpi xfonts-75dpi xfonts-scalable xfonts-cyrillic x11-apps imagemagick google-chrome-stable
+
+    - script:
+        name: Install nodejs
+        code: |
+          curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.25.4/install.sh | bash &&
+          . ~/.nvm/nvm.sh
+          nvm install iojs-2.3.3
+          nvm use iojs-2.3.3
+
+    - script:
+        name: Start xvfb
+        code: |
+          export DISPLAY=:99.0
+          # sudo start-stop-daemon --start --quiet --pidfile /tmp/xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset
+          sudo start-stop-daemon --start --pidfile /tmp/xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1080x24 -ac +extension GLX +render -noreset
+          sleep 5
+
+    - script:
+        name: Clear out node modules (for local builds)
+        code: rm -rf node_modules
+
+    - npm-install
+    - npm-test
